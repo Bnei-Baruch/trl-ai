@@ -1,0 +1,26 @@
+# Model configuration
+model:
+  name: "facebook/nllb-200-distilled-600M"
+  max_length: 128
+  num_beams: 5
+
+# Training configuration
+training:
+  dataset_name: "wmt16"  # Example dataset, change as needed
+  source_lang: "eng_Latn"
+  target_lang: "fra_Latn"
+  output_dir: "./outputs"
+  num_train_epochs: 3
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  learning_rate: 2e-5
+  weight_decay: 0.01
+  evaluation_strategy: "epoch"
+  save_total_limit: 3
+  metric_for_best_model: "bleu"
+
+# Generation configuration
+generation:
+  max_length: 128
+  num_beams: 5
+  early_stopping: true 

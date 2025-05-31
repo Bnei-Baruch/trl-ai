@@ -1,0 +1,25 @@
+name: trlai
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - jupyter
+  - pytorch
+  - cudatoolkit
+  - pip:
+    - pytest
+    - black
+    - flake8
+    - transformers
+    - datasets
+    - evaluate
+    - sacrebleu
+    - tensorboard
+    - accelerate
+    - dynaconf 
