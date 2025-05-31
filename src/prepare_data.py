@@ -5,9 +5,10 @@ Script for preparing translation data from PostgreSQL and saving to files.
 import logging
 import json
 import os
+from time import sleep
 from typing import List, Dict, Any
 import psycopg2
-from settings.config import settings
+from config import settings
 import requests
 
 # Configure logging
@@ -18,20 +19,16 @@ logger = logging.getLogger(__name__)
 
 # SQL query for fetching file translations
 query_files = """
-SELECT f.uid as en_uid, f2.uid as he_uid
+SELECT f.uid as en_uid, f2.uid as he_uid, cu.uid as cu_uid
 FROM files f
 INNER JOIN content_units cu ON cu.id = f.content_unit_id
-WHERE EXISTS (
-    SELECT 1
-    FROM files f2
-    WHERE f2.content_unit_id = cu.id
-        AND f2.language = 'he'
-        AND f2.type = 'text'
-        AND f2.properties->>'insert_type' = 'tamlil'
-)
-AND f.language = 'en'
-AND f.type = 'text'
-AND f.properties->>'insert_type' = 'tamlil'
+INNER JOIN files f2 ON f2.content_unit_id = cu.id
+WHERE f2.language = 'he'
+    AND f2.type = 'text'
+    AND f2.properties->>'insert_type' = 'tamlil'
+    AND f.language = 'en'
+    AND f.type = 'text'
+    AND f.properties->>'insert_type' = 'tamlil'
 OFFSET %s
 LIMIT %s
 """
@@ -39,21 +36,20 @@ LIMIT %s
 # Add this after the query_files definition:
 
 query_count = """
-SELECT COUNT(*) 
+SELECT COUNT(*)
 FROM files f
 INNER JOIN content_units cu ON cu.id = f.content_unit_id
-WHERE EXISTS (
-    SELECT 1
-    FROM files f2
-    WHERE f2.content_unit_id = cu.id
-        AND f2.language = 'he'
-        AND f2.type = 'text'
-        AND f2.properties->>'insert_type' = 'tamlil'
-)
-AND f.language = 'en'
-AND f.type = 'text'
-AND f.properties->>'insert_type' = 'tamlil'
+INNER JOIN files f2 ON f2.content_unit_id = cu.id
+WHERE f2.language = 'he'
+    AND f2.type = 'text'
+    AND f2.properties->>'insert_type' = 'tamlil'
+    AND f.language = 'en'
+    AND f.type = 'text'
+    AND f.properties->>'insert_type' = 'tamlil'
 """
+
+# Get database settings with defaults
+db_settings = settings.database
 
 
 def get_total_count(conn) -> int:
@@ -68,11 +64,11 @@ def get_db_connection():
     """Create a database connection."""
     try:
         conn = psycopg2.connect(
-            host=settings.database.host,
-            port=settings.database.port,
-            database=settings.database.name,
-            user=settings.database.user,
-            password=settings.database.password,
+            host=db_settings.host,
+            port=db_settings.port,
+            database=db_settings.name,
+            user=db_settings.user,
+            password=settings.database_password,
         )
         return conn
     except Exception as e:
@@ -80,9 +76,7 @@ def get_db_connection():
         raise
 
 
-def fetch_trl_item(
-    conn, batch_size: int = 1000, offset: int = 0
-) -> List[Dict[str, Any]]:
+def fetch_trl_item(conn, batch_size, offset) -> List[Dict[str, Any]]:
     """Fetch translations from database in batches."""
     translations = []
     with conn.cursor() as cur:
@@ -95,10 +89,12 @@ def fetch_trl_item(
             for row in rows:
                 en_text = fetch_files_by_uid(row[0])
                 he_text = fetch_files_by_uid(row[1])
+                cu_uid = fetch_files_by_uid(row[2])
                 translation = {
                     "translation": {
                         "en": en_text,
                         "he": he_text,
+                        "cu_uid": cu_uid,
                     }
                 }
                 translations.append(translation)
@@ -113,7 +109,7 @@ def fetch_trl_item(
 def fetch_files_by_uid(uid: str):
     url = f"https://kabbalahmedia.info/assets/api/doc2text/{uid}"
     response = requests.get(url)
-    return response.text()
+    return response.text
 
 
 def initialize_output_file(output_file: str):
@@ -147,9 +143,12 @@ def append_translations_to_file(translations: List[Dict[str, Any]], output_file:
         raise
 
 
-def prepare_data(batch_size: int = 1000):
+def prepare_data(batch_size):
     """Main function to fetch translation data and save to a single file."""
-    output_dir = os.path.join(settings.training.output_dir, "data")
+    # Use default output directory if not specified in settings
+    output_dir = os.path.join(
+        getattr(settings.training, "output_dir", "./outputs"), "data"
+    )
     output_file = os.path.join(output_dir, "translations.json")
 
     try:
@@ -160,10 +159,12 @@ def prepare_data(batch_size: int = 1000):
         conn = get_db_connection()
 
         batch_num = 0
-        max_batches = get_total_count(conn)
+        max_batches = settings.database.max_batch_size
+        if max_batches is None:
+            max_batches = get_total_count(conn) % batch_size
 
         while True:
-            if max_batches is not None and batch_num >= max_batches:
+            if batch_num >= max_batches:
                 logger.info(f"Reached maximum number of batches ({max_batches})")
                 break
 
@@ -178,6 +179,7 @@ def prepare_data(batch_size: int = 1000):
             append_translations_to_file(translations, output_file)
 
             batch_num += 1
+            sleep(5)
 
         logger.info("Data preparation completed successfully")
 
@@ -207,4 +209,5 @@ def get_translation_sample(limit: int = 5):
 
 
 if __name__ == "__main__":
-    prepare_data(settings.database.batch_size)
+    batch_size = getattr(db_settings, "batch_size", 1000)
+    prepare_data(batch_size)

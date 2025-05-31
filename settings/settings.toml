@@ -1,49 +1,41 @@
 [default]
-# Model configuration
-model = {
-    name = "facebook/m2m100_418M",
-    max_length = 128,
-    num_beams = 5
-}
 
-# Training configuration
-training = {
-    dataset_name = "wmt16",
-    source_lang = "he",
-    target_lang = "ru",
-    output_dir = "./outputs",
-    num_train_epochs = 3,
-    per_device_train_batch_size = 8,
-    per_device_eval_batch_size = 8,
-    learning_rate = 2e-5,
-    weight_decay = 0.01,
-    evaluation_strategy = "epoch",
-    save_total_limit = 3,
-    metric_for_best_model = "bleu"
-}
+[default.model]
+name = "facebook/m2m100_418M"
+max_length = 128
+num_beams = 5
 
-# Generation configuration
-generation = {
-    max_length = 128,
-    num_beams = 5,
-    early_stopping = true
-}
+[default.training]
+dataset_name = "wmt16"
+source_lang = "he"
+target_lang = "ru"
+output_dir = "./outputs"
+num_train_epochs = 3
+per_device_train_batch_size = 8
+per_device_eval_batch_size = 8
+learning_rate = 2e-5
+weight_decay = 0.01
+evaluation_strategy = "epoch"
+save_total_limit = 3
+metric_for_best_model = "bleu"
 
-[development]
-training = {
-    num_train_epochs = 1,
-    per_device_train_batch_size = 4
-}
+[default.generation]
+max_length = 128
+num_beams = 5
+early_stopping = true
 
-[production]
-training = {
-    num_train_epochs = 5,
-    save_total_limit = 5
-}
+[development.training]
+num_train_epochs = 1
+per_device_train_batch_size = 4
+
+[production.training]
+num_train_epochs = 5
+save_total_limit = 5
 
 [default.database]
 host = "pgsql2.mdb.local"
 port = 5432
 name = "mdb"
 user = "readonly"
-# password should be in .secrets.toml
+batch_size = 10
+max_batch_size = 100
