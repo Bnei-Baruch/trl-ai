@@ -1,7 +1,8 @@
 name: trlAi
 channels:
-  - conda-forge
   - pytorch
+  - huggingface
+  - conda-forge
   - defaults
 dependencies:
   - python=3.10.12
