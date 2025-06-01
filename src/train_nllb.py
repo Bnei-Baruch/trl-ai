@@ -17,7 +17,7 @@ from transformers import (
     Seq2SeqTrainer,
 )
 import evaluate
-from settings.config import settings
+from config import settings
 
 
 def load_translations() -> Tuple[Dataset, Dataset]:
