@@ -37,5 +37,5 @@ host = "pgsql2.mdb.local"
 port = 5432
 name = "mdb"
 user = "readonly"
-batch_size = 10
-max_batch_size = 100
+batch_size = 1
+max_batch_size = 2

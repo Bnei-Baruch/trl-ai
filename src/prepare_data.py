@@ -10,6 +10,7 @@ from typing import List, Dict, Any
 import psycopg2
 from config import settings
 import requests
+from split_to_sentences import split_and_pair
 
 # Configure logging
 logging.basicConfig(
@@ -174,9 +175,9 @@ def prepare_data(batch_size):
             if not translations:
                 logger.info("No more translations to fetch")
                 break
-
+            sentence_pairs = split_and_pair(translations)
             # Append translations to file
-            append_translations_to_file(translations, output_file)
+            append_translations_to_file(sentence_pairs, output_file)
 
             batch_num += 1
             sleep(5)

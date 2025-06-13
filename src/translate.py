@@ -1,5 +1,5 @@
 """
-Script to use the fine-tuned NLLB model for translation.
+Script to use the NLLB model for translation.
 """
 
 import argparse
@@ -55,8 +55,11 @@ def main():
         settings.configure(ENV_FOR_DYNACONF=args.env)
 
     # Load the fine-tuned model and tokenizer
-    model = AutoModelForSeq2SeqLM.from_pretrained(settings.training.output_dir)
-    tokenizer = AutoTokenizer.from_pretrained(settings.training.output_dir)
+    # model = AutoModelForSeq2SeqLM.from_pretrained(settings.training.output_dir)
+    # tokenizer = AutoTokenizer.from_pretrained(settings.training.output_dir)
+    # Load the base model and tokenizer
+    model = AutoModelForSeq2SeqLM.from_pretrained(settings.model.name)
+    tokenizer = AutoTokenizer.from_pretrained(settings.model.name)
 
     # Translate the text
     translation = translate_text(model, tokenizer, args.text)
